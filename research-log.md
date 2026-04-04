@@ -5,7 +5,9 @@
 なお、個人情報保護のため一部ログは`xxxxx`のように隠している。
 
 ## ping
+
 試しにpingを打ってみる。
+
 ```shell
 $ ping example.com
 PING example.com (104.18.26.120) 56(84) bytes of data.
@@ -13,6 +15,7 @@ PING example.com (104.18.26.120) 56(84) bytes of data.
 --- example.com ping statistics ---
 13 packets transmitted, 0 received, 100% packet loss, time 12290ms
 ```
+
 ```shell
 $ ping 8.8.8.8
 PING 8.8.8.8 (8.8.8.8) 56(84) bytes of data.
@@ -20,10 +23,13 @@ PING 8.8.8.8 (8.8.8.8) 56(84) bytes of data.
 --- 8.8.8.8 ping statistics ---
 83 packets transmitted, 0 received, 100% packet loss, time 83976ms
 ```
+
 どうやらpingはすべてブロックされているらしい。
 
 ## curl
+
 まずは、通常ブロックされるサイト(`one.one.one.one`)へgetリクエストを送ってみる。
+
 ```shell
 $ curl -v one.one.one.one
 * Host one.one.one.one:80 was resolved.
@@ -48,12 +54,15 @@ $ curl -v one.one.one.one
 ## <html><head><scrft type="text/javascript">location.replace("https://block.opendns.com/?url=xxxxx");</script></head></html>
 * Connection #0 to host one.one.one.one:80 left intact
 ```
+
 名前解決後のIPアドレスが146.112.61.106(OpenDNS)だから、DNSによる名前解決の時点でフィルタリングされている。
 レスポンスのJavaScriptでURLの書き換えを行い、ブロック画面へ遷移させている模様。
 
 ## curl IPアドレス指定
+
 DNSでのフィルタリングらしいので、事前にIPアドレスを調べてリクエストを送ってみる。
 185.70.42.45はproton.meのもの。
+
 ```shell
 $ curl -v http://185.70.42.45/
 *   Trying 185.70.42.45:80...
@@ -73,12 +82,15 @@ $ curl -v http://185.70.42.45/
 <html><body><h1>421 Misdirected Request</h1>Request sent to a non-authoritative server.</body></html>
 * Connection #0 to host 185.70.42.45:80 left intact                   
 ```
+
 IPアドレスだとリクエストが通った。
 protonのサーバーがIPアドレスでのアクセスを許容していないからエラーが帰ってきたが、OpenDNSのメッセージではないからサーバーへリクエストは届いている。
 
 ## dig (8.8.8.8)
+
 ここからは、DNSによる名前解決に注目するため、digを用いる。
 まずは普通に外部のDNSサーバーを指定してみる。
+
 ```shell
 $ dig example.com @8.8.8.8
 
@@ -102,6 +114,7 @@ example.com.            137     IN      A       104.18.26.120
 ;; WHEN: Mon Feb 16 12:59:13 JST 2026
 ;; MSG SIZE  rcvd: 72
 ```
+
 ```shell
 $ dig one.one.one.one @8.8.8.8
 
@@ -124,10 +137,13 @@ one.one.one.one.        0       IN      A       146.112.61.106
 ;; WHEN: Mon Feb 16 12:56:20 JST 2026
 ;; MSG SIZE  rcvd: 60
 ```
+
 一見成功しているように見えるが、one.one.one.oneがOpenDNSのIPアドレスになったので失敗している。
 
 ## dig (OpenNIC)
+
 次によりマイナーなDNSサーバーを利用してみる。
+
 ```shell
 $ dig one.one.one.one @172.233.66.93
 
@@ -150,6 +166,7 @@ one.one.one.one.        0       IN      A       146.112.61.106
 ;; WHEN: Mon Feb 16 13:00:28 JST 2026
 ;; MSG SIZE  rcvd: 60
 ```
+
 ```shell
 $ dig example.com @172.233.66.93
 
@@ -173,10 +190,12 @@ example.com.            12      IN      A       104.18.27.120
 ;; WHEN: Mon Feb 16 13:00:36 JST 2026
 ;; MSG SIZE  rcvd: 72
 ```
+
 同じく失敗した。
 禁止されていないサイトの名前解決自体は成功しているので、DNSリクエストを奪われているのだろう。
 
 ## dig dot/doh (8.8.8.8)
+
 ```shell
 $ dig one.one.one.one +tls
 ;; Connection to 8.8.8.8#853(8.8.8.8) for one.one.one.one failed: connection refused.
@@ -187,6 +206,7 @@ $ dig one.one.one.one +tls
 ;; Connection to 8.8.4.4#853(8.8.4.4) for one.one.one.one failed: connection refused.
 ;; no servers could be reached
 ```
+
 ```shell
 $ dig one.one.one.one +https
 ;; Connection to 8.8.8.8#443(8.8.8.8) for one.one.one.one failed: connection refused.
@@ -197,9 +217,11 @@ $ dig one.one.one.one +https
 ;; Connection to 8.8.4.4#443(8.8.4.4) for one.one.one.one failed: connection refused.
 ;; no servers could be reached
 ```
+
 dot/dohならいけるかと思ったが失敗した。
 
 ## dig dot/doh (BlahDNS)
+
 ```shell
 $ dig example.com @dot-sg.blahdns.com +tls
 ;; Connection to 146.112.61.106#853(146.112.61.106) for example.com failed: connection refused.
@@ -209,6 +231,7 @@ $ dig example.com @dot-sg.blahdns.com +tls
 ;; Connection to 146.112.61.106#853(146.112.61.106) for example.com failed: connection refused.
 ;; no servers could be reached
 ```
+
 ```shell
 $ dig example.com @doh-sg.blahdns.com +https=/dns-query
 ;; Connection to 146.112.61.106#443(146.112.61.106) for example.com failed: ALPN for HTTP/2 failed.
@@ -218,9 +241,11 @@ $ dig example.com @doh-sg.blahdns.com +https=/dns-query
 ;; Connection to 146.112.61.106#443(146.112.61.106) for example.com failed: ALPN for HTTP/2 failed.
 ;; no servers could be reached
 ```
+
 マイナーなDNSサーバーを使ってもdot/dohは失敗した。
 
 ## dig dot SNI指定 (BlahDNS)
+
 ```shell
 $ dig example.com @46.250.226.242 +tls +tls-host=dot-sg.blahdns.com
 ;; Connection to 46.250.226.242#853(46.250.226.242) for example.com failed: connection refused.
@@ -230,10 +255,12 @@ $ dig example.com @46.250.226.242 +tls +tls-host=dot-sg.blahdns.com
 ;; Connection to 46.250.226.242#853(46.250.226.242) for example.com failed: connection refused.
 ;; no servers could be reached
 ```
+
 SNI指定をしてもdotは失敗した。
 ポートがブロックされていると見られる。
 
 ## dig doh SNI指定 (BlahDNS)
+
 ```shell
 $ dig example.com @46.250.226.242 +https=/dns-query +tls-host=doh-sg.blahdns.com
 
@@ -257,6 +284,7 @@ example.com.            238     IN      A       104.18.27.120
 ;; WHEN: Mon Feb 16 13:29:58 JST 2026
 ;; MSG SIZE  rcvd: 72
 ```
+
 ```shell
 $ dig one.one.one.one @46.250.226.242 +https=/dns-query +tls-host=doh-sg.blahdns.com
 
@@ -280,10 +308,12 @@ one.one.one.one.        38147   IN      A       1.1.1.1
 ;; WHEN: Mon Feb 16 13:30:26 JST 2026
 ;; MSG SIZE  rcvd: 76
 ```
+
 DNSのドメインがブロックされていたらしく、dohではSNI指定をすると成功した。
 通常ブロックされているサイトでも名前解決に成功したため、きちんと回避できている。
 
 ## curl doh SNI指定
+
 ```shell
 $ curl example.com -v --doh-url https://doh-sg.blahdns.com/dns-query --resolve doh-sg.blahdns.com:443:46.250.226.242                                                  
 * Added doh-sg.blahdns.com:443:46.250.226.242 to DNS cache                                                  * Host example.com:80 was resolved.                     
@@ -314,6 +344,7 @@ $ curl example.com -v --doh-url https://doh-sg.blahdns.com/dns-query --resolve d
 <!doctype html><html lang="en"><head><title>Example Domain</title><meta name="viewport" content="width=device-width, initial-scale=1"><style>body{background:#eee;width:60vw;margin:15vh auto;font-family:system-ui,sans-serif}h1{font-size:1.5em}div{opacity:0.8}a:link,a:visited{color:#348}</style></head><body><div><h1>Example Domain</h1><p>This domain is for use in documentation examples without needing permission. Avoid use in operations.</p><p><a href="https://iana.org/domains/example">Learn more</a></p></div></body></html>
 * Connection #0 to host example.com:80 left intact
 ```
+
 ```shell
 $ curl proton.me -v --doh-url https://doh-sg.blahdns.com/dns-query --resolve doh-sg.blahdns.com:443:46.250.226.242                                                    
 * Added doh-sg.blahdns.com:443:46.250.226.242 to DNS cache                                                  * Host proton.me:80 was resolved.                       
@@ -333,12 +364,15 @@ $ curl proton.me -v --doh-url https://doh-sg.blahdns.com/dns-query --resolve doh
 <                                                       
 * Connection #0 to host proton.me:80 left 
 ```
+
 これを踏まえてcurlしてみると、成功した。
 
-## dig dot (BlahDNS) + AdAway 
-```
+## dig dot (BlahDNS) + AdAway
+
+```adaway
 dot-sg.blahdns.com -> 146.112.61.106
 ```
+
 ```shell
 $ dig example.com @dot-sg.blahdns.com +tls
 ;; Connection to 146.112.61.106#853(146.112.61.106) for example.com failed: connection refused.
@@ -348,10 +382,13 @@ $ dig example.com @dot-sg.blahdns.com +tls
 ;; Connection to 146.112.61.106#853(146.112.61.106) for example.com failed: connection refused.
 ;; no servers could be reached
 ```
+
 ## dig doh (BlahDNS) + AdAway
-```
+
+```adaway
 doh-sg.blahdns.com -> 46.250.226.242
 ```
+
 ```shell
 $ dig one.one.one.one @doh-sg.blahdns.com +https=/dns-query
 
@@ -375,4 +412,5 @@ one.one.one.one.        37761   IN      A       1.1.1.1
 ;; WHEN: Mon Feb 16 13:36:53 JST 2026
 ;; MSG SIZE  rcvd: 76
 ```
+
 adawayでopennicの名前解決のみを行うことでも成功した。

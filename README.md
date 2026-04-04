@@ -2,7 +2,20 @@
 
 校内ネットワークの調査プロジェクト
 
+## Disclaimer
+
+本プロジェクトに従って発生したいかなる損害についても、著者は一切責任を負いません。  
+仕組みや危険性を調べ理解したうえで、自己責任で行ってください。
+
 ## Documentation
+
+- [フィルタリングの仕組みと対策](./bypass.md)
+- [対策AndroidでのDoHを用いた対策](./bypass-android.md)
+- [対策iOSでのDoHを用いた対策](./bypass-ios.md)
+
+## Log
+
+- [フィルタリング調査](./research-log.md)
 
 ## License
 
